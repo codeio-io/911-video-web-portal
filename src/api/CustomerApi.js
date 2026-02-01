@@ -106,10 +106,7 @@ export const userUpdateCustomerVideoAccount = async (data) => {
 
 export const storeVideoFlowData = async (data) => {
   try {
-    const response = await axios.post(
-      `${API_BASE_URL}/store-video-flow-data`,
-      data
-    );
+    const response = await apiClient.post("/store-video-flow-data", data);
     return response.data;
   } catch (error) {
     console.error("Failed to store video flow data:", error);
