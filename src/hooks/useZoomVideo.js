@@ -54,6 +54,7 @@ export function useZoomVideo() {
   const startVideoCall = async (
     entryId,
     language,
+    languageVideo,
     name = "Customer",
     accessCode,
     callType
@@ -78,7 +79,8 @@ export function useZoomVideo() {
           await storeVideoFlowData({
             EngagementId: engagementId,
             AccessCode: accessCode || "2025",
-            Language: language,
+            Language: language + "_Video",
+            LanguageDB: language,
             CallType: callType || "video",
           });
         } catch (err) {
@@ -118,7 +120,8 @@ export function useZoomVideo() {
           await storeVideoFlowData({
             EngagementId: engagementId,
             AccessCode: "2025",
-            Language: language,
+            Language: language + "_Video",
+            LanguageDB: language,
             CallType: "audio",
           });
         } catch (err) {
