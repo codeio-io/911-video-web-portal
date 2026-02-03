@@ -206,7 +206,9 @@ export default function LanguagesList() {
                       const videoDisabled =
                         lang.opted_in_count_video === 0 || !isReady;
                       const audioDisabled =
-                        lang.opted_in_count_audio === 0 || !isReady;
+                        lang.opted_in_count_audio === 0 ||
+                        !isReady ||
+                        lang.language.includes("ASL");
                       const videoCount = lang.opted_in_count_video || 0;
                       const audioCount = lang.opted_in_count_audio || 0;
 
