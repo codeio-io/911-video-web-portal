@@ -51,7 +51,12 @@ export function useZoomVideo() {
     };
   }, []);
 
-  const startVideoCall = async (entryId, language, name = "Customer") => {
+  const startVideoCall = async (
+    entryId,
+    language,
+    name = "Customer",
+    callType = "video"
+  ) => {
     if (!videoClientRef.current || !isReady) {
       console.error("Video client not initialized");
       return;
@@ -73,7 +78,7 @@ export function useZoomVideo() {
             EngagementId: engagementId,
             Language: language,
             LanguageDB: language.replace("_Video", ""),
-            CallType: "video",
+            CallType: callType,
           });
         } catch (err) {
           console.error("API call failed:", err);
@@ -82,7 +87,10 @@ export function useZoomVideo() {
     });
 
     try {
-      await videoClient.init({ entryId, name });
+      await videoClient.init({
+        entryId,
+        name: sessionStorage.getItem("customer_name"),
+      });
       // This starts the flow. We don't 'await' it for the API call
       // because our listener above handles the data as soon as it exists.
       videoClient.startVideo();
@@ -91,50 +99,9 @@ export function useZoomVideo() {
     }
   };
 
-  const startAudioCall = async (entryId, language, name = "Customer") => {
-    if (!videoClientRef.current || !isReady) {
-      console.error("Video client not initialized");
-      return;
-    }
-
-    // Create a new video client instance for each call to avoid event listener conflicts
-    const videoClient = new window.VideoClient({});
-
-    // Listen for the engagement_started event specifically
-    videoClient.on("engagement_started", async (payload) => {
-      // Check if the payload contains the ID (usually in payload.engagementId)
-      const engagementId = payload.engagementId;
-
-      if (engagementId) {
-        console.warn("Engagement ID captured early:", engagementId);
-
-        try {
-          await storeVideoFlowData({
-            EngagementId: engagementId,
-            Language: language + "_Video",
-            LanguageDB: language.replace("_Video", ""),
-            CallType: "audio",
-          });
-        } catch (err) {
-          console.error("API call failed:", err);
-        }
-      }
-    });
-
-    try {
-      await videoClient.init({ entryId, name });
-      // This starts the flow. We don't 'await' it for the API call
-      // because our listener above handles the data as soon as it exists.
-      videoClient.startVideo();
-    } catch (err) {
-      console.error("Failed to start audio:", err);
-    }
-  };
-
   return {
     videoClient: videoClientRef.current,
     startVideoCall,
-    startAudioCall,
     isReady,
   };
 }
