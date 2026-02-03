@@ -26,10 +26,13 @@ export default function ProfileManagement() {
     phone: "",
   });
   const [originalProfile, setOriginalProfile] = useState(null);
+  const [accountType, setAccountType] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+
+  const isSharedAccount = accountType === "shared";
 
   const hasChanges =
     originalProfile &&
@@ -56,6 +59,7 @@ export default function ProfileManagement() {
       };
       setProfile(loaded);
       setOriginalProfile(loaded);
+      setAccountType(data?.account_type ?? data?.accountType ?? null);
     } catch (err) {
       setError("Failed to load profile. Please try again.");
       console.error(err);
@@ -158,8 +162,14 @@ export default function ProfileManagement() {
                   value={profile.first_name}
                   onChange={(e) => handleChange("first_name", e.target.value)}
                   required
-                  className="w-full"
+                  disabled={isSharedAccount}
+                  className={`w-full ${isSharedAccount ? "bg-zinc-50" : ""}`}
                 />
+                {isSharedAccount && (
+                  <Text className="text-xs text-zinc-500 mt-1">
+                    Not editable for shared accounts
+                  </Text>
+                )}
               </Field>
 
               <Field>
@@ -169,7 +179,8 @@ export default function ProfileManagement() {
                   value={profile.last_name}
                   onChange={(e) => handleChange("last_name", e.target.value)}
                   required
-                  className="w-full"
+                  disabled={isSharedAccount}
+                  className={`w-full ${isSharedAccount ? "bg-zinc-50" : ""}`}
                 />
               </Field>
             </div>
@@ -181,6 +192,8 @@ export default function ProfileManagement() {
                 value={profile.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
                 placeholder="+1 (555) 123-4567"
+                disabled={isSharedAccount}
+                className={isSharedAccount ? "bg-zinc-50" : ""}
               />
             </Field>
 

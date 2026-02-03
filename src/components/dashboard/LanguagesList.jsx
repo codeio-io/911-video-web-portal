@@ -1,11 +1,17 @@
-import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
-import { Input, InputGroup } from '../ui/input';
-import { Button } from '../ui/button';
-import { Heading } from '../ui/heading';
-import { Text } from '../ui/text';
-import { getAvailableLanguages } from '../../api/CustomerApi';
-import { useZoomVideo } from '../../hooks/useZoomVideo';
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "../ui/card";
+import { Input, InputGroup } from "../ui/input";
+import { Button } from "../ui/button";
+import { Heading } from "../ui/heading";
+import { Text } from "../ui/text";
+import { getAvailableLanguages } from "../../api/CustomerApi";
+import { useZoomVideo } from "../../hooks/useZoomVideo";
 
 function VideoIcon({ disabled, className = "" }) {
   const fill = disabled ? "#9ca3af" : "currentColor";
@@ -28,7 +34,11 @@ function PhoneIcon({ disabled, className = "" }) {
 function SearchIcon() {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" className="size-5">
-      <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
+      <path
+        fillRule="evenodd"
+        d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+        clipRule="evenodd"
+      />
     </svg>
   );
 }
@@ -38,9 +48,13 @@ function RefreshIcon({ spinning }) {
     <svg
       viewBox="0 0 20 20"
       fill="currentColor"
-      className={`size-5 ${spinning ? 'animate-spin' : ''}`}
+      className={`size-5 ${spinning ? "animate-spin" : ""}`}
     >
-      <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.312.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31a7 7 0 00-11.713 3.138.75.75 0 001.45.389 5.5 5.5 0 019.202-2.466l.312.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z" clipRule="evenodd" />
+      <path
+        fillRule="evenodd"
+        d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.312.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31a7 7 0 00-11.713 3.138.75.75 0 001.45.389 5.5 5.5 0 019.202-2.466l.312.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z"
+        clipRule="evenodd"
+      />
     </svg>
   );
 }
@@ -48,7 +62,7 @@ function RefreshIcon({ spinning }) {
 export default function LanguagesList() {
   const [languages, setLanguages] = useState([]);
   const [filteredLanguages, setFilteredLanguages] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,7 +74,7 @@ export default function LanguagesList() {
   }, []);
 
   useEffect(() => {
-    if (searchQuery.trim() === '') {
+    if (searchQuery.trim() === "") {
       setFilteredLanguages(languages);
     } else {
       const filtered = languages.filter((lang) =>
@@ -83,35 +97,40 @@ export default function LanguagesList() {
       setError(null);
       // For now, using mock data. Replace with actual API call when endpoint is ready
       const data = await getAvailableLanguages();
-      
+
       setLanguages(data);
       setFilteredLanguages(data);
     } catch (err) {
-      setError('Failed to load languages. Please try again.');
+      setError("Failed to load languages. Please try again.");
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVideoCall = async (language, accessCode = "2025", callType = "video") => {
+  const handleVideoCall = async (language, callType = "video") => {
     if (!isReady) {
-      alert('Video client is not ready yet. Please wait a moment.');
+      alert("Video client is not ready yet. Please wait a moment.");
       return;
     }
 
     // TODO: Get entryId from API based on language
     const entryId = "4PUouPs7RXSNQJYW6W896Q";
-    
+
     try {
-      await startVideoCall(entryId, language, "Customer", accessCode, callType);
+      await startVideoCall(
+        entryId,
+        language,
+        language + "_Video",
+        "Customer",
+        callType
+      );
     } catch (err) {
-      console.error('Failed to start video call:', err);
-      alert('Failed to start video call. Please try again.');
+      console.error("Failed to start video call:", err);
+      alert("Failed to start video call. Please try again.");
     }
   };
 
- 
   if (loading && languages.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -124,7 +143,7 @@ export default function LanguagesList() {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
         <Text className="text-red-600">{error}</Text>
-        <Button 
+        <Button
           onClick={loadLanguages}
           className="bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all duration-200 px-6 py-2.5 font-medium shadow-sm hover:shadow-md"
         >
@@ -152,7 +171,7 @@ export default function LanguagesList() {
           title="Refresh languages"
         >
           <RefreshIcon spinning={loading} />
-          <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
+          <span>{loading ? "Refreshing..." : "Refresh"}</span>
         </Button>
       </div>
 
@@ -184,52 +203,74 @@ export default function LanguagesList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3">
                       <h3 className="text-sm font-semibold text-zinc-950">
-                        {lang.language}
+                        {lang.language?.replace("_Video", "")}
                       </h3>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     {(() => {
-                      const videoDisabled = lang.opted_in_count_video === 0 || !isReady;
-                      const audioDisabled = lang.opted_in_count_audio === 0 || !isReady;
+                      const videoDisabled =
+                        lang.opted_in_count_video === 0 || !isReady;
+                      const audioDisabled =
+                        lang.opted_in_count_audio === 0 || !isReady;
                       const videoCount = lang.opted_in_count_video || 0;
                       const audioCount = lang.opted_in_count_audio || 0;
-                      
+
                       return (
                         <>
                           <Button
                             variant={videoDisabled ? "outline" : "default"}
                             size="default"
                             disabled={videoDisabled}
-                            onClick={() => handleVideoCall(lang.language, "2025", "video")}
+                            onClick={() =>
+                              handleVideoCall(lang.language, "2025", "video")
+                            }
                             className={`
                               relative flex items-center gap-2 px-4 py-2 
-                              ${videoDisabled 
-                                ? 'border-zinc-300 bg-white text-zinc-400 cursor-not-allowed' 
-                                : 'bg-green-600 text-white hover:bg-green-700 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md'
+                              ${
+                                videoDisabled
+                                  ? "border-zinc-300 bg-white text-zinc-400 cursor-not-allowed"
+                                  : "bg-green-600 text-white hover:bg-green-700 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md"
                               }
                               disabled:opacity-60 disabled:cursor-not-allowed
                             `}
-                            title={videoDisabled ? `No video interpreters available (${videoCount} available)` : `Start video call (${videoCount} interpreters available)`}
+                            title={
+                              videoDisabled
+                                ? `No video interpreters available (${videoCount} available)`
+                                : `Start video call (${videoCount} interpreters available)`
+                            }
                           >
-                            <VideoIcon disabled={videoDisabled} className={videoDisabled ? '' : 'text-white'} />
+                            <VideoIcon
+                              disabled={videoDisabled}
+                              className={videoDisabled ? "" : "text-white"}
+                            />
                           </Button>
                           <Button
                             variant={audioDisabled ? "outline" : "default"}
                             size="default"
                             disabled={audioDisabled}
-                            onClick={() => handleVideoCall(lang.language, "2025", "audio")}
+                            onClick={() =>
+                              handleVideoCall(lang.language, "2025", "audio")
+                            }
                             className={`
                               relative flex items-center gap-2 px-4 py-2 
-                              ${audioDisabled 
-                                ? 'border-zinc-300 bg-white text-zinc-400 cursor-not-allowed' 
-                                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md'
+                              ${
+                                audioDisabled
+                                  ? "border-zinc-300 bg-white text-zinc-400 cursor-not-allowed"
+                                  : "bg-green-600 text-white hover:bg-green-700 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md"
                               }
                               disabled:opacity-60 disabled:cursor-not-allowed
                             `}
-                            title={audioDisabled ? `No audio interpreters available (${audioCount} available)` : `Start audio call (${audioCount} interpreters available)`}
+                            title={
+                              audioDisabled
+                                ? `No audio interpreters available (${audioCount} available)`
+                                : `Start audio call (${audioCount} interpreters available)`
+                            }
                           >
-                            <PhoneIcon disabled={audioDisabled} className={audioDisabled ? '' : 'text-white'} />
+                            <PhoneIcon
+                              disabled={audioDisabled}
+                              className={audioDisabled ? "" : "text-white"}
+                            />
                           </Button>
                         </>
                       );
@@ -243,13 +284,17 @@ export default function LanguagesList() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between">
                 <Text className="text-sm text-zinc-500">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredLanguages.length)} of {filteredLanguages.length} languages
+                  Showing {startIndex + 1} to{" "}
+                  {Math.min(endIndex, filteredLanguages.length)} of{" "}
+                  {filteredLanguages.length} languages
                 </Text>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
                     disabled={currentPage === 1}
                     className="border-zinc-300 hover:bg-zinc-50 hover:border-zinc-400 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2"
                   >
@@ -261,7 +306,9 @@ export default function LanguagesList() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
                     disabled={currentPage === totalPages}
                     className="border-zinc-300 hover:bg-zinc-50 hover:border-zinc-400 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2"
                   >
