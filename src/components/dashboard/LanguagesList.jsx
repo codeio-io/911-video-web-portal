@@ -108,12 +108,7 @@ export default function LanguagesList() {
     }
   };
 
-  const handleVideoCall = async (
-    language,
-    languageVideo,
-    accessCode = "2025",
-    callType = "video"
-  ) => {
+  const handleVideoCall = async (language, callType = "video") => {
     if (!isReady) {
       alert("Video client is not ready yet. Please wait a moment.");
       return;
@@ -126,9 +121,8 @@ export default function LanguagesList() {
       await startVideoCall(
         entryId,
         language,
-        languageVideo,
+        language + "_Video",
         "Customer",
-        accessCode,
         callType
       );
     } catch (err) {
@@ -209,7 +203,7 @@ export default function LanguagesList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3">
                       <h3 className="text-sm font-semibold text-zinc-950">
-                        {lang.language}
+                        {lang.language?.replace("_Video", "")}
                       </h3>
                     </div>
                   </div>
@@ -263,7 +257,7 @@ export default function LanguagesList() {
                               ${
                                 audioDisabled
                                   ? "border-zinc-300 bg-white text-zinc-400 cursor-not-allowed"
-                                  : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md"
+                                  : "bg-green-600 text-white hover:bg-green-700 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md"
                               }
                               disabled:opacity-60 disabled:cursor-not-allowed
                             `}

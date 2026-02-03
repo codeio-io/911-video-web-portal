@@ -51,14 +51,7 @@ export function useZoomVideo() {
     };
   }, []);
 
-  const startVideoCall = async (
-    entryId,
-    language,
-    languageVideo,
-    name = "Customer",
-    accessCode,
-    callType
-  ) => {
+  const startVideoCall = async (entryId, language, name = "Customer") => {
     if (!videoClientRef.current || !isReady) {
       console.error("Video client not initialized");
       return;
@@ -78,10 +71,9 @@ export function useZoomVideo() {
         try {
           await storeVideoFlowData({
             EngagementId: engagementId,
-            AccessCode: accessCode || "2025",
-            Language: language + "_Video",
-            LanguageDB: language,
-            CallType: callType || "video",
+            Language: language,
+            LanguageDB: language.replace("_Video", ""),
+            CallType: "video",
           });
         } catch (err) {
           console.error("API call failed:", err);
@@ -119,9 +111,8 @@ export function useZoomVideo() {
         try {
           await storeVideoFlowData({
             EngagementId: engagementId,
-            AccessCode: "2025",
             Language: language + "_Video",
-            LanguageDB: language,
+            LanguageDB: language.replace("_Video", ""),
             CallType: "audio",
           });
         } catch (err) {
