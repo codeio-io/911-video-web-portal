@@ -53,6 +53,7 @@ const LoginWrapper = () => {
       authLogin({
         ...response,
         token: response.token,
+        customer_name: response.customer_name,
         // isAuthenticated is determined by the presence of a user in the context
       });
       navigate("/dashboard", { replace: true });

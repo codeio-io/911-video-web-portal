@@ -28,11 +28,13 @@ export function AuthProvider({ children }) {
     };
     setUser(userData);
     sessionStorage.setItem("token", authData.token);
+    sessionStorage.setItem("customer_name", authData.customer_name);
   };
 
   const logout = () => {
     setUser(null);
     sessionStorage.removeItem("token");
+    sessionStorage.removeItem("customer_name");
   };
 
   const hasRole = (roles) => {

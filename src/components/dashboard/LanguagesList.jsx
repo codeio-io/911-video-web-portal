@@ -118,13 +118,7 @@ export default function LanguagesList() {
     const entryId = "4PUouPs7RXSNQJYW6W896Q";
 
     try {
-      await startVideoCall(
-        entryId,
-        language,
-        language + "_Video",
-        "Customer",
-        callType
-      );
+      await startVideoCall(entryId, language, "Customer", callType);
     } catch (err) {
       console.error("Failed to start video call:", err);
       alert("Failed to start video call. Please try again.");
@@ -223,7 +217,7 @@ export default function LanguagesList() {
                             size="default"
                             disabled={videoDisabled}
                             onClick={() =>
-                              handleVideoCall(lang.language, "2025", "video")
+                              handleVideoCall(lang.language, "video")
                             }
                             className={`
                               relative flex items-center gap-2 px-4 py-2 
@@ -234,11 +228,6 @@ export default function LanguagesList() {
                               }
                               disabled:opacity-60 disabled:cursor-not-allowed
                             `}
-                            title={
-                              videoDisabled
-                                ? `No video interpreters available (${videoCount} available)`
-                                : `Start video call (${videoCount} interpreters available)`
-                            }
                           >
                             <VideoIcon
                               disabled={videoDisabled}
@@ -250,7 +239,7 @@ export default function LanguagesList() {
                             size="default"
                             disabled={audioDisabled}
                             onClick={() =>
-                              handleVideoCall(lang.language, "2025", "audio")
+                              handleVideoCall(lang.language, "audio")
                             }
                             className={`
                               relative flex items-center gap-2 px-4 py-2 
@@ -261,11 +250,6 @@ export default function LanguagesList() {
                               }
                               disabled:opacity-60 disabled:cursor-not-allowed
                             `}
-                            title={
-                              audioDisabled
-                                ? `No audio interpreters available (${audioCount} available)`
-                                : `Start audio call (${audioCount} interpreters available)`
-                            }
                           >
                             <PhoneIcon
                               disabled={audioDisabled}
