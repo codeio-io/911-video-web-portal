@@ -16,7 +16,12 @@ import { useZoomVideo } from "../../hooks/useZoomVideo";
 /** Trim _Video and _Audio suffix from language name before handling. */
 function trimLanguageSuffix(name) {
   if (typeof name !== "string") return name ?? "";
-  return name.replace(/_Video$/i, "").replace(/_Audio$/i, "").trim() || name;
+  return (
+    name
+      .replace(/_Video$/i, "")
+      .replace(/_Audio$/i, "")
+      .trim() || name
+  );
 }
 
 function VideoIcon({ disabled, className = "" }) {
@@ -116,8 +121,8 @@ export default function LanguagesList() {
       const availList = Array.isArray(availRaw) ? availRaw : [];
       const availabilityByLanguage = {};
       for (const item of availList) {
-        const rawLang =
-          typeof item === "string" ? item : item?.language ?? "";
+        const raw = typeof item === "object" && item !== null ? item : {};
+        const rawLang = typeof item === "string" ? item : item?.language ?? "";
         const baseName = trimLanguageSuffix(rawLang);
         if (!baseName) continue;
         if (!availabilityByLanguage[baseName]) {
@@ -126,19 +131,19 @@ export default function LanguagesList() {
             opted_in_count_audio: 0,
           };
         }
-        const raw = typeof item === "object" && item !== null ? item : {};
-        if (/_Video$/i.test(rawLang))
-          availabilityByLanguage[baseName].opted_in_count_video =
-            raw.opted_in_count_video ?? 0;
-        if (/_Audio$/i.test(rawLang))
-          availabilityByLanguage[baseName].opted_in_count_audio =
-            raw.opted_in_count_audio ?? 0;
-        if (!/_Video$/i.test(rawLang) && !/_Audio$/i.test(rawLang)) {
-          availabilityByLanguage[baseName].opted_in_count_video =
-            raw.opted_in_count_video ?? 0;
-          availabilityByLanguage[baseName].opted_in_count_audio =
-            raw.opted_in_count_audio ?? 0;
-        }
+        // API always sends _Video suffix for each language; one row has both video and audio counts
+        const v =
+          Number(raw.opted_in_count_video ?? raw.optedInCountVideo ?? 0) || 0;
+        const a =
+          Number(raw.opted_in_count_audio ?? raw.optedInCountAudio ?? 0) || 0;
+        availabilityByLanguage[baseName].opted_in_count_video = Math.max(
+          availabilityByLanguage[baseName].opted_in_count_video ?? 0,
+          v
+        );
+        availabilityByLanguage[baseName].opted_in_count_audio = Math.max(
+          availabilityByLanguage[baseName].opted_in_count_audio ?? 0,
+          a
+        );
       }
 
       const merged = allLanguageNames.map((name) => ({
