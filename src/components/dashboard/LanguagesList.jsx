@@ -10,8 +10,14 @@ import { Input, InputGroup } from "../ui/input";
 import { Button } from "../ui/button";
 import { Heading } from "../ui/heading";
 import { Text } from "../ui/text";
-import { getAvailableLanguages } from "../../api/CustomerApi";
+import { listLanguages, getAvailableLanguages } from "../../api/CustomerApi";
 import { useZoomVideo } from "../../hooks/useZoomVideo";
+
+/** Trim _Video and _Audio suffix from language name before handling. */
+function trimLanguageSuffix(name) {
+  if (typeof name !== "string") return name ?? "";
+  return name.replace(/_Video$/i, "").replace(/_Audio$/i, "").trim() || name;
+}
 
 function VideoIcon({ disabled, className = "" }) {
   const fill = disabled ? "#9ca3af" : "currentColor";
@@ -91,15 +97,60 @@ export default function LanguagesList() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedLanguages = filteredLanguages.slice(startIndex, endIndex);
 
+  /** First load all languages (list-languages), then load available by video/audio; trim _Video/_Audio before use. */
   const loadLanguages = async () => {
     try {
       setLoading(true);
       setError(null);
-      // For now, using mock data. Replace with actual API call when endpoint is ready
-      const data = await getAvailableLanguages();
 
-      setLanguages(data);
-      setFilteredLanguages(data);
+      const listRes = await listLanguages();
+      const listRaw = listRes?.data ?? listRes?.items ?? listRes;
+      const list = Array.isArray(listRaw) ? listRaw : [];
+      const allNames = list.map((item) =>
+        typeof item === "string" ? item : item?.language ?? item?.name ?? ""
+      );
+      const allLanguageNames = allNames.filter(Boolean);
+
+      const availRes = await getAvailableLanguages();
+      const availRaw = availRes?.data ?? availRes?.items ?? availRes;
+      const availList = Array.isArray(availRaw) ? availRaw : [];
+      const availabilityByLanguage = {};
+      for (const item of availList) {
+        const rawLang =
+          typeof item === "string" ? item : item?.language ?? "";
+        const baseName = trimLanguageSuffix(rawLang);
+        if (!baseName) continue;
+        if (!availabilityByLanguage[baseName]) {
+          availabilityByLanguage[baseName] = {
+            opted_in_count_video: 0,
+            opted_in_count_audio: 0,
+          };
+        }
+        const raw = typeof item === "object" && item !== null ? item : {};
+        if (/_Video$/i.test(rawLang))
+          availabilityByLanguage[baseName].opted_in_count_video =
+            raw.opted_in_count_video ?? 0;
+        if (/_Audio$/i.test(rawLang))
+          availabilityByLanguage[baseName].opted_in_count_audio =
+            raw.opted_in_count_audio ?? 0;
+        if (!/_Video$/i.test(rawLang) && !/_Audio$/i.test(rawLang)) {
+          availabilityByLanguage[baseName].opted_in_count_video =
+            raw.opted_in_count_video ?? 0;
+          availabilityByLanguage[baseName].opted_in_count_audio =
+            raw.opted_in_count_audio ?? 0;
+        }
+      }
+
+      const merged = allLanguageNames.map((name) => ({
+        language: name,
+        ...(availabilityByLanguage[name] ?? {
+          opted_in_count_video: 0,
+          opted_in_count_audio: 0,
+        }),
+      }));
+
+      setLanguages(merged);
+      setFilteredLanguages(merged);
     } catch (err) {
       setError("Failed to load languages. Please try again.");
       console.error(err);
@@ -197,7 +248,7 @@ export default function LanguagesList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3">
                       <h3 className="text-sm font-semibold text-zinc-950">
-                        {lang.language?.replace("_Video", "")}
+                        {trimLanguageSuffix(lang.language)}
                       </h3>
                     </div>
                   </div>

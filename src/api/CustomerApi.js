@@ -23,6 +23,18 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+/** All languages (master list). */
+export const listLanguages = async () => {
+  try {
+    const response = await apiClient.get("/list-all-languages");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch list of languages:", error);
+    throw error;
+  }
+};
+
+/** Available languages by video and audio. Response language names may include _Video or _Audio suffix; trim before use. */
 export const getAvailableLanguages = async () => {
   try {
     const response = await apiClient.get("/get-availability-by-languages");
