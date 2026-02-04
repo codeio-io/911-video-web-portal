@@ -3,6 +3,8 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/routing/ProtectedRoute';
 import PublicRoute from './components/routing/PublicRoute';
 import LoginWrapper from './components/auth/LoginWrapper';
+import ForgotPasswordWrapper from './components/auth/ForgotPasswordWrapper';
+import ResetPasswordWrapper from './components/auth/ResetPasswordWrapper';
 import Dashboard from './components/dashboard/Dashboard';
 import './App.css';
 
@@ -16,6 +18,22 @@ function App() {
             element={
               <PublicRoute>
                 <LoginWrapper />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPasswordWrapper />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPasswordWrapper />
               </PublicRoute>
             }
           />

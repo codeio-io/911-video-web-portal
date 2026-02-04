@@ -139,13 +139,13 @@ export default function Dashboard() {
       </SidebarHeader>
       <SidebarBody>
         <SidebarSection className="w-full">
-          <SidebarItem
+          {/* <SidebarItem
             current={activeSection === "reports"}
             onClick={() => setActiveSection("reports")}
           >
             <ReportIcon />
             <SidebarLabel>Reports</SidebarLabel>
-          </SidebarItem>
+          </SidebarItem> */}
           <SidebarItem
             current={activeSection === "languages"}
             onClick={() => setActiveSection("languages")}

@@ -24,3 +24,33 @@ export const setup_mfa = async (session) => {
     throw error;
   }
 };
+
+/** Request OTP for forgot password. Sends code to the given email. */
+export const requestForgotPasswordOtp = async (email) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/forgot-password`, {
+      email,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/** Confirm forgot password with OTP and new password. */
+export const confirmForgotPassword = async (email, code, newPassword) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/confirm-forgot-password`,
+      {
+        email,
+        code,
+        newPassword,
+        confirmPassword: newPassword,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

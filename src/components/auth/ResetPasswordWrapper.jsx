@@ -1,14 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Field, Label, ErrorMessage } from "../../components/ui/fieldset";
 import { Heading } from "../../components/ui/heading";
 import { Input } from "../../components/ui/input";
 import { Text, TextLink } from "../../components/ui/text";
 import { AuthLayout } from "../../components/ui/auth-layout";
-import { Link, useLocation, useNavigate } from "react-router";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Formik, Form, useField } from "formik";
 import * as Yup from "yup";
-import axios from "axios";
+import { confirmForgotPassword } from "../../api/AuthApi";
 
 // Custom form field component
 const FormField = ({ label, ...props }) => {
@@ -29,15 +29,23 @@ const FormField = ({ label, ...props }) => {
 };
 
 const ResetPasswordWrapper = () => {
+  const [searchParams] = useSearchParams();
   const [isResetting, setIsResetting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
-  const location = useLocation();
   const navigate = useNavigate();
 
-  // Get email from URL params or location state
-  const searchParams = new URLSearchParams(location.search);
   const email = searchParams.get("email") || "";
+
+  useEffect(() => {
+    if (!email) {
+      navigate("/forgot-password", { replace: true });
+    }
+  }, [email, navigate]);
+
+  if (!email) {
+    return null;
+  }
 
   // Validation schema
   const validationSchema = Yup.object({
@@ -57,15 +65,10 @@ const ResetPasswordWrapper = () => {
       setIsResetting(true);
       setError("");
 
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/confirm-forgot-password`,
-        {
-          email,
-          code: values.code,
-          newPassword: values.newPassword,
-          confirmPassword: values.confirmPassword,
-        },
-        { withCredentials: true }
+      await confirmForgotPassword(
+        email,
+        values.code,
+        values.newPassword
       );
 
       setIsSuccess(true);
@@ -170,7 +173,7 @@ const ResetPasswordWrapper = () => {
               <div className="text-center">
                 <Text>
                   Didn't receive the code?{" "}
-                  <TextLink to="/forgot-password">Resend Code</TextLink>
+                  <TextLink to={`/forgot-password`}>Resend Code</TextLink>
                 </Text>
               </div>
             </Form>

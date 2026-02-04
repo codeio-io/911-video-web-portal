@@ -3,7 +3,71 @@ import { Table } from "antd";
 import { Button } from "../ui/button";
 import { Heading } from "../ui/heading";
 import { Text } from "../ui/text";
+import { Label } from "../ui/label";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "../ui/popover";
+import { Calendar } from "../ui/calendar";
+import { cn } from "../../lib/utils";
 import { listCallsHistoryVideo } from "../../api/CustomerApi";
+
+const MAX_RANGE_DAYS = 31;
+
+function formatDateRangeDisplay(from, to) {
+  if (!from) return null;
+  const opts = { month: "short", day: "numeric", year: "numeric" };
+  const fromStr = from.toLocaleDateString("en-US", opts);
+  if (!to || from.getTime() === to.getTime()) return fromStr;
+  return `${fromStr} - ${to.toLocaleDateString("en-US", opts)}`;
+}
+
+function getTodayDateRange() {
+  const today = new Date();
+  const from = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const to = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+    23,
+    59,
+    59,
+    999
+  );
+  return { from, to };
+}
+
+function diffDays(d1, d2) {
+  const start = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate());
+  const end = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
+  return Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+function toLocalDateString(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function CalendarIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className="size-4"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
+      />
+    </svg>
+  );
+}
 
 function RefreshIcon({ spinning }) {
   return (
@@ -41,20 +105,23 @@ export default function CallsHistory() {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dateRange, setDateRange] = useState(() => getTodayDateRange());
+  const [dateRangeError, setDateRangeError] = useState(null);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
 
-  const loadCallHistory = useCallback(async (page = 1, pageSize = 10) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await listCallsHistoryVideo({
-        page,
-        pageSize,
-      });
+  const loadCallHistory = useCallback(
+    async (page = 1, pageSize = 10, dateFrom, dateTo) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const params = { page, pageSize };
+        if (dateFrom) params.startDate = dateFrom;
+        if (dateTo) params.endDate = dateTo;
+        const response = await listCallsHistoryVideo(params);
 
       // Support common API response shapes: { data, total }, { items, meta }, or array
       const items = response?.data ?? response?.items ?? response;
@@ -77,14 +144,86 @@ export default function CallsHistory() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  },
+    [dateRange]
+  );
+
+  const getDateParams = useCallback(() => {
+    if (!dateRange?.from) return {};
+    const from = dateRange.from;
+    const to = dateRange.to ?? dateRange.from;
+    return {
+      dateFrom: toLocalDateString(from),
+      dateTo: toLocalDateString(to),
+    };
+  }, [dateRange]);
 
   useEffect(() => {
-    loadCallHistory(pagination.current, pagination.pageSize);
+    const dateFrom = dateRange?.from
+      ? toLocalDateString(dateRange.from)
+      : undefined;
+    const dateTo = dateRange?.to
+      ? toLocalDateString(dateRange.to)
+      : dateRange?.from
+        ? toLocalDateString(dateRange.from)
+        : undefined;
+    loadCallHistory(pagination.current, pagination.pageSize, dateFrom, dateTo);
   }, [loadCallHistory]);
 
   const handleTableChange = (newPagination) => {
-    loadCallHistory(newPagination.current, newPagination.pageSize);
+    const { dateFrom, dateTo } = getDateParams();
+    loadCallHistory(
+      newPagination.current,
+      newPagination.pageSize,
+      dateFrom,
+      dateTo
+    );
+  };
+
+  const handleDateSelect = (newDate) => {
+    setDateRangeError(null);
+    if (!newDate) {
+      setDateRange(getTodayDateRange());
+      return;
+    }
+    if (!newDate.from) {
+      setDateRange(getTodayDateRange());
+      return;
+    }
+    if (newDate.to && newDate.from) {
+      const days = diffDays(newDate.from, newDate.to);
+      if (days > MAX_RANGE_DAYS) {
+        setDateRangeError(
+          "Date range cannot exceed 31 days. Please select a smaller range."
+        );
+        return;
+      }
+    }
+    const from = new Date(
+      newDate.from.getFullYear(),
+      newDate.from.getMonth(),
+      newDate.from.getDate()
+    );
+    const to = newDate.to
+      ? new Date(
+          newDate.to.getFullYear(),
+          newDate.to.getMonth(),
+          newDate.to.getDate(),
+          23,
+          59,
+          59,
+          999
+        )
+      : new Date(
+          newDate.from.getFullYear(),
+          newDate.from.getMonth(),
+          newDate.from.getDate(),
+          23,
+          59,
+          59,
+          999
+        );
+    setDateRange({ from, to });
   };
 
   const columns = [
@@ -164,12 +303,21 @@ export default function CallsHistory() {
   }
 
   const handleRefresh = () => {
-    loadCallHistory(pagination.current, pagination.pageSize);
+    const { dateFrom, dateTo } = getDateParams();
+    loadCallHistory(pagination.current, pagination.pageSize, dateFrom, dateTo);
   };
+
+  const handleClearFilters = () => {
+    setDateRange(undefined);
+    setDateRangeError(null);
+    loadCallHistory(pagination.current, pagination.pageSize, undefined, undefined);
+  };
+
+  const hasActiveFilters = !!dateRange?.from;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <Heading>Call History</Heading>
           <Text className="text-zinc-500 mt-2">
@@ -187,6 +335,76 @@ export default function CallsHistory() {
           <RefreshIcon spinning={loading} />
           <span>{loading ? "Refreshing..." : "Refresh"}</span>
         </Button>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="date" className="text-muted-foreground text-sm font-normal">
+              Date Range{" "}
+              <span className="text-xs text-zinc-400">(max 31 days)</span>
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="date"
+                  variant="outline"
+                  className={cn(
+                    "justify-start text-left font-normal w-[240px]",
+                    !dateRange && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon />
+                  {dateRange?.from ? (
+                    dateRange.to && dateRange.from.getTime() !== dateRange.to?.getTime() ? (
+                      formatDateRangeDisplay(dateRange.from, dateRange.to)
+                    ) : (
+                      formatDateRangeDisplay(dateRange.from, null)
+                    )
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 border border-border bg-white text-popover-foreground shadow-md rounded-md" align="start">
+                <Calendar
+                  mode="range"
+                  defaultMonth={dateRange?.from}
+                  selected={dateRange}
+                  disabled={(calendarDate) => {
+                    if (
+                      dateRange?.from &&
+                      !dateRange?.to &&
+                      calendarDate instanceof Date
+                    ) {
+                      const days = Math.abs(
+                        diffDays(dateRange.from, calendarDate)
+                      );
+                      return days > MAX_RANGE_DAYS;
+                    }
+                    return false;
+                  }}
+                  onSelect={handleDateSelect}
+                  numberOfMonths={1}
+                />
+              </PopoverContent>
+            </Popover>
+            {dateRangeError && (
+              <Text className="text-xs text-destructive">
+                {dateRangeError}
+              </Text>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearFilters}
+            disabled={!hasActiveFilters || loading}
+            className="text-muted-foreground hover:text-foreground shrink-0"
+          >
+            Clear filters
+          </Button>
+        </div>
       </div>
 
       <div className="w-full overflow-x-auto">
