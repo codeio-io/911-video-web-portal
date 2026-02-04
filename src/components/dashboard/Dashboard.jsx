@@ -109,7 +109,7 @@ function PowerOffIcon() {
 }
 
 export default function Dashboard() {
-  const [activeSection, setActiveSection] = useState("reports");
+  const [activeSection, setActiveSection] = useState("languages");
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
