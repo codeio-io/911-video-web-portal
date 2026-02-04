@@ -191,7 +191,7 @@ export default function ProfileManagement() {
                 type="tel"
                 value={profile.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
-                placeholder="+1 (555) 123-4567"
+                placeholder="+15551234567"
                 disabled={isSharedAccount}
                 className={isSharedAccount ? "bg-zinc-50" : ""}
               />
