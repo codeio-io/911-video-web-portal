@@ -236,14 +236,15 @@ export default function LanguagesList() {
                               className={videoDisabled ? "" : "text-white"}
                             />
                           </Button>
-                          <Button
-                            variant={audioDisabled ? "outline" : "default"}
-                            size="default"
-                            disabled={audioDisabled}
-                            onClick={() =>
-                              handleVideoCall(lang.language, "audio")
-                            }
-                            className={`
+                          {!lang.language.includes("ASL") && (
+                            <Button
+                              variant={audioDisabled ? "outline" : "default"}
+                              size="default"
+                              disabled={audioDisabled}
+                              onClick={() =>
+                                handleVideoCall(lang.language, "audio")
+                              }
+                              className={`
                               relative flex items-center gap-2 px-4 py-2 
                               ${
                                 audioDisabled
@@ -252,12 +253,13 @@ export default function LanguagesList() {
                               }
                               disabled:opacity-60 disabled:cursor-not-allowed
                             `}
-                          >
-                            <PhoneIcon
-                              disabled={audioDisabled}
-                              className={audioDisabled ? "" : "text-white"}
-                            />
-                          </Button>
+                            >
+                              <PhoneIcon
+                                disabled={audioDisabled}
+                                className={audioDisabled ? "" : "text-white"}
+                              />
+                            </Button>
+                          )}
                         </>
                       );
                     })()}
