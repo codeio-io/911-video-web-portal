@@ -57,12 +57,16 @@ export const getCallHistory = async () => {
 
 export const listCallsHistoryVideo = async (params = {}) => {
   try {
+    const { startDate, endDate, ...rest } = params;
+    const query = {
+      page: params.page ?? 1,
+      page_size: params.pageSize ?? 10,
+      ...rest,
+    };
+    if (startDate) query.start_date = startDate;
+    if (endDate) query.end_date = endDate;
     const response = await apiClient.get("/list-calls-history-video", {
-      params: {
-        page: params.page ?? 1,
-        page_size: params.pageSize ?? 10,
-        ...params,
-      },
+      params: query,
     });
     return response.data;
   } catch (error) {

@@ -13,10 +13,18 @@ import {
   listLanguagesUsageByCustomer,
 } from "../../api/CustomerApi";
 
+/** Seconds to minutes for display (rounded to 2 decimals). */
+function secondsToMinutes(seconds) {
+  const s = Number(seconds);
+  if (s == null || isNaN(s)) return 0;
+  return Math.round((s / 60) * 100) / 100;
+}
+
 export default function Reports() {
   const [totalCalls, setTotalCalls] = useState(0);
   const [totalMinutes, setTotalMinutes] = useState(0);
   const [tableData, setTableData] = useState([]);
+  const [totalSecondsByCustomer, setTotalSecondsByCustomer] = useState(0);
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -54,20 +62,18 @@ export default function Reports() {
           pageSize,
         });
 
-        const items =
-          response?.data ?? response?.items ?? response;
-        const total =
-          response?.meta?.total ??
-          response?.total ??
-          (Array.isArray(items) ? items.length : 0);
-        const data = Array.isArray(items) ? items : [];
+        const languages = response?.languages ?? response?.data ?? response?.items ?? response;
+        const totalSeconds = Number(response?.total_seconds_by_customer ?? 0) || 0;
+        const list = Array.isArray(languages) ? languages : [];
+        const total = response?.meta?.total ?? response?.total ?? list.length;
 
-        setTableData(data);
+        setTotalSecondsByCustomer(totalSeconds);
+        setTableData(list);
         setPagination((prev) => ({
           ...prev,
           current: page,
           pageSize,
-          total: typeof total === "number" ? total : data.length,
+          total: typeof total === "number" ? total : list.length,
         }));
       } catch (err) {
         console.error(err);
@@ -90,6 +96,14 @@ export default function Reports() {
     loadLanguagesUsage(newPagination.current, newPagination.pageSize);
   };
 
+  const getRowSeconds = (row) => {
+    const sec = row?.total_seconds ?? row?.totalSeconds ?? row?.seconds;
+    if (sec != null && !isNaN(Number(sec))) return Number(sec);
+    const mins = row?.total_minutes ?? row?.totalMinutes ?? row?.minutes;
+    if (mins != null && !isNaN(Number(mins))) return Number(mins) * 60;
+    return 0;
+  };
+
   const columns = [
     {
       title: "Language",
@@ -108,22 +122,19 @@ export default function Reports() {
     },
     {
       title: "Total Minutes",
-      dataIndex: "total_minutes",
       key: "total_minutes",
       width: 140,
-      render: (val, row) =>
-        val ?? row?.totalMinutes ?? row?.minutes ?? 0,
+      render: (_, row) => secondsToMinutes(getRowSeconds(row)),
     },
     {
       title: "% of Total Minutes",
       key: "pct_minutes",
       width: 160,
       render: (_, row) => {
-        const mins =
-          Number(row?.total_minutes ?? row?.totalMinutes ?? row?.minutes ?? 0) ||
-          0;
-        if (!totalMinutes || totalMinutes === 0) return "0%";
-        const pct = (mins / totalMinutes) * 100;
+        const rowSeconds = getRowSeconds(row);
+        if (!totalSecondsByCustomer || totalSecondsByCustomer === 0)
+          return "0%";
+        const pct = (rowSeconds / totalSecondsByCustomer) * 100;
         return `${pct.toFixed(1)}%`;
       },
     },

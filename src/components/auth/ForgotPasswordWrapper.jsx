@@ -5,10 +5,10 @@ import { Heading } from "../../components/ui/heading";
 import { Input } from "../../components/ui/input";
 import { Text, TextLink } from "../../components/ui/text";
 import { AuthLayout } from "../../components/ui/auth-layout";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { Formik, Form, useField } from "formik";
 import * as Yup from "yup";
-import axios from "axios";
+import { requestForgotPasswordOtp } from "../../api/AuthApi";
 
 // Custom form field component
 const FormField = ({ label, ...props }) => {
@@ -47,11 +47,7 @@ const ForgotPasswordWrapper = () => {
       setIsLoading(true);
       setError("");
 
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/forgot-password`,
-        { email: values.email },
-        { withCredentials: true }
-      );
+      await requestForgotPasswordOtp(values.email);
 
       setUserEmail(values.email);
       setIsSubmitted(true);
@@ -132,12 +128,12 @@ const ForgotPasswordWrapper = () => {
                 {isLoading ? "Sending..." : "Send Reset Code"}
               </Button>
 
-              <div className="text-center">
-                <Text>
-                  Remember your password?{" "}
-                  <TextLink href="/login">Sign In</TextLink>
-                </Text>
-              </div>
+          <div className="text-center">
+            <Text>
+              Remember your password?{" "}
+              <TextLink to="/login">Sign In</TextLink>
+            </Text>
+          </div>
             </Form>
           )}
         </Formik>
