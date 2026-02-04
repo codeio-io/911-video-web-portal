@@ -113,3 +113,29 @@ export const storeVideoFlowData = async (data) => {
     throw error;
   }
 };
+
+export const getUsageByVideoCustomer = async () => {
+  try {
+    const response = await apiClient.get("/get-usage-by-video-customer");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch usage by video customer:", error);
+    throw error;
+  }
+};
+
+export const listLanguagesUsageByCustomer = async (params = {}) => {
+  try {
+    const response = await apiClient.get("/list-languages-usage-by-customer", {
+      params: {
+        page: params.page ?? 1,
+        page_size: params.pageSize ?? 10,
+        ...params,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch languages usage by customer:", error);
+    throw error;
+  }
+};
