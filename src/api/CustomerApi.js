@@ -48,17 +48,13 @@ export const getAvailableLanguages = async () => {
 /** Top languages for the dashboard. For now returns mock data; replace with real endpoint when ready. */
 export const getTopLanguages = async () => {
   // TODO: replace with real API call, e.g. apiClient.get("/top-languages")
-  await new Promise((r) => setTimeout(r, 0)); // simulate async
-  return [
-    { language: "Spanish", opted_in_count_video: 12, opted_in_count_audio: 8 },
-    { language: "Mandarin", opted_in_count_video: 10, opted_in_count_audio: 6 },
-    { language: "Arabic", opted_in_count_video: 8, opted_in_count_audio: 5 },
-    { language: "Vietnamese", opted_in_count_video: 7, opted_in_count_audio: 4 },
-    { language: "French", opted_in_count_video: 6, opted_in_count_audio: 7 },
-    { language: "Tagalog", opted_in_count_video: 5, opted_in_count_audio: 3 },
-    { language: "Korean", opted_in_count_video: 4, opted_in_count_audio: 4 },
-    { language: "Russian", opted_in_count_video: 3, opted_in_count_audio: 2 },
-  ];
+  try {
+    const response = await apiClient.get("/get-top-video-languages");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch top video languages:", error);
+    throw error;
+  }
 };
 
 export const getCallHistory = async () => {

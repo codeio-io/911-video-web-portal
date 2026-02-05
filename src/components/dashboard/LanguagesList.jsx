@@ -165,69 +165,68 @@ export default function LanguagesList() {
     };
   }, []);
 
-  // Load top languages from API (mock for now)
+  // Load top languages from API and fetch availability separately
   useEffect(() => {
-    getTopLanguages()
-      .then((res) => {
-        const raw = res?.data ?? res?.items ?? res;
-        const list = Array.isArray(raw) ? raw : [];
-        setTopLanguages(
-          list
-            .map((item) => ({
-              language: item?.language ?? item?.name ?? "",
-              opted_in_count_video:
-                Number(
-                  item?.opted_in_count_video ?? item?.optedInCountVideo ?? 0
-                ) || 0,
-              opted_in_count_audio:
-                Number(
-                  item?.opted_in_count_audio ?? item?.optedInCountAudio ?? 0
-                ) || 0,
-            }))
-            .filter((item) => item.language)
-        );
-      })
-      .catch((err) => {
+    const loadTopLanguages = async () => {
+      try {
+        // Fetch top languages (only returns language names)
+        const topRes = await getTopLanguages();
+        const topRaw = topRes?.data ?? topRes?.items ?? topRes;
+        const topList = Array.isArray(topRaw) ? topRaw : [];
+        const topLangNames = topList
+          .map((item) => item?.language ?? item?.name ?? "")
+          .filter(Boolean);
+
+        // Fetch availability data
+        const availRes = await getAvailableLanguages();
+        const availRaw = availRes?.data ?? availRes?.items ?? availRes;
+        const availList = Array.isArray(availRaw) ? availRaw : [];
+
+        // Build availability lookup
+        const availabilityByLanguage = {};
+        for (const item of availList) {
+          const raw = typeof item === "object" && item !== null ? item : {};
+          const rawLang = typeof item === "string" ? item : item?.language ?? "";
+          const baseName = trimLanguageSuffix(rawLang);
+          if (!baseName) continue;
+          if (!availabilityByLanguage[baseName]) {
+            availabilityByLanguage[baseName] = {
+              opted_in_count_video: 0,
+              opted_in_count_audio: 0,
+            };
+          }
+          const v =
+            Number(raw.opted_in_count_video ?? raw.optedInCountVideo ?? 0) || 0;
+          const a =
+            Number(raw.opted_in_count_audio ?? raw.optedInCountAudio ?? 0) || 0;
+          availabilityByLanguage[baseName].opted_in_count_video = Math.max(
+            availabilityByLanguage[baseName].opted_in_count_video ?? 0,
+            v
+          );
+          availabilityByLanguage[baseName].opted_in_count_audio = Math.max(
+            availabilityByLanguage[baseName].opted_in_count_audio ?? 0,
+            a
+          );
+        }
+
+        // Merge top languages with availability
+        const merged = topLangNames.map((name) => ({
+          language: name,
+          ...(availabilityByLanguage[name] ?? {
+            opted_in_count_video: 0,
+            opted_in_count_audio: 0,
+          }),
+        }));
+
+        setTopLanguages(merged);
+      } catch (err) {
         console.error("Failed to load top languages:", err);
         setTopLanguages([]);
-      });
-  }, []);
-
-  // Sync top languages availability from main languages list (handles load order timing)
-  useEffect(() => {
-    if (languages.length === 0 || topLanguages.length === 0) return;
-    // Build availability lookup from languages
-    const availabilityByLanguage = {};
-    for (const lang of languages) {
-      const baseName = trimLanguageSuffix(lang.language);
-      if (baseName) {
-        availabilityByLanguage[baseName] = {
-          opted_in_count_video: lang.opted_in_count_video ?? 0,
-          opted_in_count_audio: lang.opted_in_count_audio ?? 0,
-        };
       }
-    }
-    // Update top languages with availability from main list
-    setTopLanguages((prev) =>
-      prev.map((lang) => {
-        const baseName = trimLanguageSuffix(lang.language);
-        const avail = availabilityByLanguage[baseName];
-        if (!avail) return lang;
-        // Only update if values differ to avoid infinite loop
-        if (
-          lang.opted_in_count_video === avail.opted_in_count_video &&
-          lang.opted_in_count_audio === avail.opted_in_count_audio
-        ) {
-          return lang;
-        }
-        return {
-          ...lang,
-          opted_in_count_video: avail.opted_in_count_video,
-          opted_in_count_audio: avail.opted_in_count_audio,
-        };
-      })
-    );
-  }, [languages]);
+    };
+
+    loadTopLanguages();
+  }, []);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -414,7 +413,7 @@ export default function LanguagesList() {
                     </span>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Button
-                        variant={videoDisabled ? "outline" : "default"}
+                        variant="outline"
                         size="default"
                         disabled={videoDisabled}
                         onClick={() => handleVideoCall(lang.language, "video")}
@@ -431,7 +430,7 @@ export default function LanguagesList() {
                       </Button>
                       {!lang.language?.includes("ASL") && (
                         <Button
-                          variant={audioDisabled ? "outline" : "default"}
+                          variant="outline"
                           size="default"
                           disabled={audioDisabled}
                           onClick={() =>
@@ -487,7 +486,7 @@ export default function LanguagesList() {
                       return (
                         <>
                           <Button
-                            variant={videoDisabled ? "outline" : "default"}
+                            variant="outline"
                             size="default"
                             disabled={videoDisabled}
                             onClick={() =>
@@ -506,7 +505,7 @@ export default function LanguagesList() {
                           </Button>
                           {!lang.language?.includes("ASL") && (
                             <Button
-                              variant={audioDisabled ? "outline" : "default"}
+                              variant="outline"
                               size="default"
                               disabled={audioDisabled}
                               onClick={() =>
