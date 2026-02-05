@@ -97,14 +97,14 @@ const LoginWrapper = () => {
                 <div className="text-red-600 text-sm">{loginError}</div>
               )}
 
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <Link
                   to="/forgot-password"
                   className="text-sm text-blue-600 hover:underline"
                 >
                   Forgot password?
                 </Link>
-              </div>
+              </div> */}
 
               <Button
                 type="submit"
