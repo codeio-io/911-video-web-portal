@@ -1,16 +1,14 @@
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "../ui/card";
+import { Card } from "../ui/card";
 import { Input, InputGroup } from "../ui/input";
 import { Button } from "../ui/button";
 import { Heading } from "../ui/heading";
 import { Text } from "../ui/text";
-import { listLanguages, getAvailableLanguages } from "../../api/CustomerApi";
+import {
+  listLanguages,
+  getAvailableLanguages,
+  getTopLanguages,
+} from "../../api/CustomerApi";
 import { useZoomVideo } from "../../hooks/useZoomVideo";
 
 /** Trim _Video and _Audio suffix from language name before handling. */
@@ -70,6 +68,23 @@ function RefreshIcon({ spinning }) {
   );
 }
 
+// Shared availability logic and button styles for video/audio (used in top languages and list)
+function getAvailability(lang, isReady) {
+  const videoDisabled = (lang?.opted_in_count_video ?? 0) === 0 || !isReady;
+  const audioDisabled =
+    (lang?.opted_in_count_audio ?? 0) === 0 ||
+    !isReady ||
+    (lang?.language && lang.language.includes("ASL"));
+  return { videoDisabled, audioDisabled };
+}
+
+const CALL_BUTTON_ENABLED_CLASS =
+  "bg-green-600 text-white hover:bg-green-700 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md";
+const CALL_BUTTON_DISABLED_CLASS =
+  "border-zinc-300 bg-white text-zinc-400 cursor-not-allowed";
+const CALL_BUTTON_BASE_CLASS =
+  "relative flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed";
+
 export default function LanguagesList() {
   const [languages, setLanguages] = useState([]);
   const [filteredLanguages, setFilteredLanguages] = useState([]);
@@ -78,11 +93,141 @@ export default function LanguagesList() {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
+  const [topLanguages, setTopLanguages] = useState([]);
   const { startVideoCall, isReady } = useZoomVideo();
 
+  /** Silent refresh: only fetch availability and merge into current languages (no loading state). */
+  const refreshAvailability = async () => {
+    try {
+      const availRes = await getAvailableLanguages();
+      const availRaw = availRes?.data ?? availRes?.items ?? availRes;
+      const availList = Array.isArray(availRaw) ? availRaw : [];
+      const availabilityByLanguage = {};
+      for (const item of availList) {
+        const raw = typeof item === "object" && item !== null ? item : {};
+        const rawLang = typeof item === "string" ? item : item?.language ?? "";
+        const baseName = trimLanguageSuffix(rawLang);
+        if (!baseName) continue;
+        if (!availabilityByLanguage[baseName]) {
+          availabilityByLanguage[baseName] = {
+            opted_in_count_video: 0,
+            opted_in_count_audio: 0,
+          };
+        }
+        const v =
+          Number(raw.opted_in_count_video ?? raw.optedInCountVideo ?? 0) || 0;
+        const a =
+          Number(raw.opted_in_count_audio ?? raw.optedInCountAudio ?? 0) || 0;
+        availabilityByLanguage[baseName].opted_in_count_video = Math.max(
+          availabilityByLanguage[baseName].opted_in_count_video ?? 0,
+          v
+        );
+        availabilityByLanguage[baseName].opted_in_count_audio = Math.max(
+          availabilityByLanguage[baseName].opted_in_count_audio ?? 0,
+          a
+        );
+      }
+      setLanguages((prev) =>
+        prev.map((lang) => {
+          const baseName = trimLanguageSuffix(lang.language);
+          const avail = availabilityByLanguage[baseName];
+          return {
+            ...lang,
+            opted_in_count_video: avail?.opted_in_count_video ?? 0,
+            opted_in_count_audio: avail?.opted_in_count_audio ?? 0,
+          };
+        })
+      );
+      // Also update top languages with fresh availability
+      setTopLanguages((prev) =>
+        prev.map((lang) => {
+          const baseName = trimLanguageSuffix(lang.language);
+          const avail = availabilityByLanguage[baseName];
+          return {
+            ...lang,
+            opted_in_count_video: avail?.opted_in_count_video ?? 0,
+            opted_in_count_audio: avail?.opted_in_count_audio ?? 0,
+          };
+        })
+      );
+    } catch (err) {
+      console.error("Background languages availability refresh failed:", err);
+    }
+  };
+
   useEffect(() => {
-    loadLanguages();
+    let intervalId;
+    loadLanguages().then(() => {
+      intervalId = setInterval(refreshAvailability, 60_000);
+    });
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
+
+  // Load top languages from API (mock for now)
+  useEffect(() => {
+    getTopLanguages()
+      .then((res) => {
+        const raw = res?.data ?? res?.items ?? res;
+        const list = Array.isArray(raw) ? raw : [];
+        setTopLanguages(
+          list
+            .map((item) => ({
+              language: item?.language ?? item?.name ?? "",
+              opted_in_count_video:
+                Number(
+                  item?.opted_in_count_video ?? item?.optedInCountVideo ?? 0
+                ) || 0,
+              opted_in_count_audio:
+                Number(
+                  item?.opted_in_count_audio ?? item?.optedInCountAudio ?? 0
+                ) || 0,
+            }))
+            .filter((item) => item.language)
+        );
+      })
+      .catch((err) => {
+        console.error("Failed to load top languages:", err);
+        setTopLanguages([]);
+      });
+  }, []);
+
+  // Sync top languages availability from main languages list (handles load order timing)
+  useEffect(() => {
+    if (languages.length === 0 || topLanguages.length === 0) return;
+    // Build availability lookup from languages
+    const availabilityByLanguage = {};
+    for (const lang of languages) {
+      const baseName = trimLanguageSuffix(lang.language);
+      if (baseName) {
+        availabilityByLanguage[baseName] = {
+          opted_in_count_video: lang.opted_in_count_video ?? 0,
+          opted_in_count_audio: lang.opted_in_count_audio ?? 0,
+        };
+      }
+    }
+    // Update top languages with availability from main list
+    setTopLanguages((prev) =>
+      prev.map((lang) => {
+        const baseName = trimLanguageSuffix(lang.language);
+        const avail = availabilityByLanguage[baseName];
+        if (!avail) return lang;
+        // Only update if values differ to avoid infinite loop
+        if (
+          lang.opted_in_count_video === avail.opted_in_count_video &&
+          lang.opted_in_count_audio === avail.opted_in_count_audio
+        ) {
+          return lang;
+        }
+        return {
+          ...lang,
+          opted_in_count_video: avail.opted_in_count_video,
+          opted_in_count_audio: avail.opted_in_count_audio,
+        };
+      })
+    );
+  }, [languages]);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -156,6 +301,18 @@ export default function LanguagesList() {
 
       setLanguages(merged);
       setFilteredLanguages(merged);
+      // Also update top languages with fresh availability
+      setTopLanguages((prev) =>
+        prev.map((lang) => {
+          const baseName = trimLanguageSuffix(lang.language);
+          const avail = availabilityByLanguage[baseName];
+          return {
+            ...lang,
+            opted_in_count_video: avail?.opted_in_count_video ?? 0,
+            opted_in_count_audio: avail?.opted_in_count_audio ?? 0,
+          };
+        })
+      );
     } catch (err) {
       setError("Failed to load languages. Please try again.");
       console.error(err);
@@ -237,6 +394,70 @@ export default function LanguagesList() {
         </InputGroup>
       </div>
 
+      {/* Top languages – small cards, list-style buttons */}
+      {topLanguages.length > 0 && (
+        <section className="space-y-2">
+          <Heading level={2} className="text-sm font-semibold text-zinc-800">
+            Top languages
+          </Heading>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {topLanguages.map((lang) => {
+              const { videoDisabled, audioDisabled } = getAvailability(
+                lang,
+                isReady
+              );
+              return (
+                <Card key={lang.language} className="border-zinc-200 px-3 py-2">
+                  <div className="flex flex-col items-center justify-between gap-2 min-w-0">
+                    <span className="text-sm font-medium text-zinc-950 truncate">
+                      {trimLanguageSuffix(lang.language)}
+                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        variant={videoDisabled ? "outline" : "default"}
+                        size="default"
+                        disabled={videoDisabled}
+                        onClick={() => handleVideoCall(lang.language, "video")}
+                        className={`p-2 ${CALL_BUTTON_BASE_CLASS} ${
+                          videoDisabled
+                            ? CALL_BUTTON_DISABLED_CLASS
+                            : CALL_BUTTON_ENABLED_CLASS
+                        }`}
+                      >
+                        <VideoIcon
+                          disabled={videoDisabled}
+                          className={videoDisabled ? "" : "text-white"}
+                        />
+                      </Button>
+                      {!lang.language?.includes("ASL") && (
+                        <Button
+                          variant={audioDisabled ? "outline" : "default"}
+                          size="default"
+                          disabled={audioDisabled}
+                          onClick={() =>
+                            handleVideoCall(lang.language, "audio")
+                          }
+                          className={`p-2 ${CALL_BUTTON_BASE_CLASS} ${
+                            audioDisabled
+                              ? CALL_BUTTON_DISABLED_CLASS
+                              : CALL_BUTTON_ENABLED_CLASS
+                          }`}
+                        >
+                          <PhoneIcon
+                            disabled={audioDisabled}
+                            className={audioDisabled ? "" : "text-white"}
+                          />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <div className="space-y-4">
         {filteredLanguages.length === 0 ? (
           <div className="py-12 text-center">
@@ -259,15 +480,10 @@ export default function LanguagesList() {
                   </div>
                   <div className="flex items-center gap-3">
                     {(() => {
-                      const videoDisabled =
-                        lang.opted_in_count_video === 0 || !isReady;
-                      const audioDisabled =
-                        lang.opted_in_count_audio === 0 ||
-                        !isReady ||
-                        lang.language.includes("ASL");
-                      const videoCount = lang.opted_in_count_video || 0;
-                      const audioCount = lang.opted_in_count_audio || 0;
-
+                      const { videoDisabled, audioDisabled } = getAvailability(
+                        lang,
+                        isReady
+                      );
                       return (
                         <>
                           <Button
@@ -277,22 +493,18 @@ export default function LanguagesList() {
                             onClick={() =>
                               handleVideoCall(lang.language, "video")
                             }
-                            className={`
-                              relative flex items-center gap-2 px-4 py-2 
-                              ${
-                                videoDisabled
-                                  ? "border-zinc-300 bg-white text-zinc-400 cursor-not-allowed"
-                                  : "bg-green-600 text-white hover:bg-green-700 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md"
-                              }
-                              disabled:opacity-60 disabled:cursor-not-allowed
-                            `}
+                            className={`gap-2 px-4 py-2 ${CALL_BUTTON_BASE_CLASS} ${
+                              videoDisabled
+                                ? CALL_BUTTON_DISABLED_CLASS
+                                : CALL_BUTTON_ENABLED_CLASS
+                            }`}
                           >
                             <VideoIcon
                               disabled={videoDisabled}
                               className={videoDisabled ? "" : "text-white"}
                             />
                           </Button>
-                          {!lang.language.includes("ASL") && (
+                          {!lang.language?.includes("ASL") && (
                             <Button
                               variant={audioDisabled ? "outline" : "default"}
                               size="default"
@@ -300,15 +512,11 @@ export default function LanguagesList() {
                               onClick={() =>
                                 handleVideoCall(lang.language, "audio")
                               }
-                              className={`
-                              relative flex items-center gap-2 px-4 py-2 
-                              ${
+                              className={`gap-2 px-4 py-2 ${CALL_BUTTON_BASE_CLASS} ${
                                 audioDisabled
-                                  ? "border-zinc-300 bg-white text-zinc-400 cursor-not-allowed"
-                                  : "bg-green-600 text-white hover:bg-green-700 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md"
-                              }
-                              disabled:opacity-60 disabled:cursor-not-allowed
-                            `}
+                                  ? CALL_BUTTON_DISABLED_CLASS
+                                  : CALL_BUTTON_ENABLED_CLASS
+                              }`}
                             >
                               <PhoneIcon
                                 disabled={audioDisabled}

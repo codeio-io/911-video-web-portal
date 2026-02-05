@@ -12,8 +12,20 @@ import {
 import { Button } from "../ui/button";
 import { Navbar, NavbarSection, NavbarSpacer, NavbarItem } from "../ui/navbar";
 import { Text } from "../ui/text";
+import { Input, InputGroup } from "../ui/input";
+import { Label } from "../ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "../ui/dialog";
+import { Lock } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { changePassword } from "../../api/CustomerApi";
 import LanguagesList from "./LanguagesList";
 import CallsHistory from "./CallsHistory";
 import Reports from "./Reports";
@@ -110,12 +122,71 @@ function PowerOffIcon() {
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState("languages");
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changePasswordError, setChangePasswordError] = useState("");
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const openChangePassword = () => {
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setChangePasswordError("");
+    setChangePasswordOpen(true);
+  };
+
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setChangePasswordError("");
+    if (!oldPassword.trim()) {
+      setChangePasswordError("Current password is required.");
+      return;
+    }
+    if (!newPassword.trim()) {
+      setChangePasswordError("New password is required.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError("New password and confirmation do not match.");
+      return;
+    }
+    setChangePasswordLoading(true);
+    try {
+      const response = await changePassword(
+        oldPassword,
+        newPassword,
+        confirmPassword
+      );
+      const newToken =
+        response?.access_token ??
+        response?.token ??
+        response?.data?.access_token ??
+        response?.data?.token;
+      if (newToken) {
+        sessionStorage.setItem("token", newToken);
+        setChangePasswordOpen(false);
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ??
+        err?.response?.data?.error ??
+        "Failed to change password. Please check your current password.";
+      setChangePasswordError(message);
+    } finally {
+      setChangePasswordLoading(false);
+    }
   };
 
   const userInitials = user?.email
@@ -169,7 +240,15 @@ export default function Dashboard() {
           </SidebarItem>
         </SidebarSection>
       </SidebarBody>
-      <SidebarFooter>
+      <SidebarFooter className="flex flex-col gap-2">
+        <Button
+          onClick={openChangePassword}
+          variant="outline"
+          className="w-full flex items-center justify-center gap-2 border-zinc-300 hover:bg-zinc-50 hover:border-zinc-400 active:scale-95 transition-all duration-200 px-4 py-2.5 font-medium"
+        >
+          <Lock className="size-5" />
+          <span>Change password</span>
+        </Button>
         <Button
           onClick={handleLogout}
           variant="outline"
@@ -191,11 +270,91 @@ export default function Dashboard() {
   );
 
   return (
-    <StackedLayout navbar={navbar} sidebar={sidebar}>
-      {activeSection === "reports" && <Reports />}
-      {activeSection === "languages" && <LanguagesList />}
-      {activeSection === "history" && <CallsHistory />}
-      {activeSection === "profile" && <ProfileManagement />}
-    </StackedLayout>
+    <>
+      <StackedLayout navbar={navbar} sidebar={sidebar}>
+        {activeSection === "reports" && <Reports />}
+        {activeSection === "languages" && <LanguagesList />}
+        {activeSection === "history" && <CallsHistory />}
+        {activeSection === "profile" && <ProfileManagement />}
+      </StackedLayout>
+
+      <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change password</DialogTitle>
+            <DialogDescription>
+              Enter your current password and choose a new one.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="old-password">Current password</Label>
+              <InputGroup>
+                <Input
+                  id="old-password"
+                  type="password"
+                  placeholder="Current password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  autoComplete="current-password"
+                  className="w-full"
+                />
+              </InputGroup>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New password</Label>
+              <InputGroup>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="New password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full"
+                />
+              </InputGroup>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm new password</Label>
+              <InputGroup>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full"
+                />
+              </InputGroup>
+            </div>
+            {changePasswordError && (
+              <Text className="text-sm text-red-600">
+                {changePasswordError}
+              </Text>
+            )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setChangePasswordOpen(false)}
+                disabled={changePasswordLoading}
+                className="border-zinc-300 hover:bg-zinc-50"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={changePasswordLoading}
+                className="bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {changePasswordLoading ? "Updating…" : "Update password"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
