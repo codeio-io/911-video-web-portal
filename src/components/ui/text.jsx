@@ -2,13 +2,7 @@ import clsx from "clsx";
 import { Link } from "./link";
 
 export function Text({ className, ...props }) {
-  return (
-    <p
-      data-slot="text"
-      {...props}
-      className={clsx(className, "text-zinc-500")}
-    />
-  );
+  return <p data-slot="text" {...props} className={clsx("", className)} />;
 }
 
 export function TextLink({ className, ...props }) {

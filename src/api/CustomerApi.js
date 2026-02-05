@@ -26,7 +26,7 @@ apiClient.interceptors.request.use((config) => {
 /** All languages (master list). */
 export const listLanguages = async () => {
   try {
-    const response = await apiClient.get("/list-all-languages");
+    const response = await apiClient.get("/list-all-video-languages");
     return response.data;
   } catch (error) {
     console.error("Failed to fetch list of languages:", error);
@@ -43,6 +43,22 @@ export const getAvailableLanguages = async () => {
     console.error("Failed to fetch available languages:", error);
     throw error;
   }
+};
+
+/** Top languages for the dashboard. For now returns mock data; replace with real endpoint when ready. */
+export const getTopLanguages = async () => {
+  // TODO: replace with real API call, e.g. apiClient.get("/top-languages")
+  await new Promise((r) => setTimeout(r, 0)); // simulate async
+  return [
+    { language: "Spanish", opted_in_count_video: 12, opted_in_count_audio: 8 },
+    { language: "Mandarin", opted_in_count_video: 10, opted_in_count_audio: 6 },
+    { language: "Arabic", opted_in_count_video: 8, opted_in_count_audio: 5 },
+    { language: "Vietnamese", opted_in_count_video: 7, opted_in_count_audio: 4 },
+    { language: "French", opted_in_count_video: 6, opted_in_count_audio: 7 },
+    { language: "Tagalog", opted_in_count_video: 5, opted_in_count_audio: 3 },
+    { language: "Korean", opted_in_count_video: 4, opted_in_count_audio: 4 },
+    { language: "Russian", opted_in_count_video: 3, opted_in_count_audio: 2 },
+  ];
 };
 
 export const getCallHistory = async () => {
@@ -152,6 +168,25 @@ export const listLanguagesUsageByCustomer = async (params = {}) => {
     return response.data;
   } catch (error) {
     console.error("Failed to fetch languages usage by customer:", error);
+    throw error;
+  }
+};
+
+/** Change password. Expects { old_password, new_password }. Returns new access token to store. */
+export const changePassword = async (
+  oldPassword,
+  newPassword,
+  confirmPassword
+) => {
+  try {
+    const response = await apiClient.post("/user-video-change-password", {
+      old_password: oldPassword,
+      new_password: newPassword,
+      confirm_password: confirmPassword,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to change password:", error);
     throw error;
   }
 };

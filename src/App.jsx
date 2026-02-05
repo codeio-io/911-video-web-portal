@@ -1,12 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/routing/ProtectedRoute';
-import PublicRoute from './components/routing/PublicRoute';
-import LoginWrapper from './components/auth/LoginWrapper';
-import ForgotPasswordWrapper from './components/auth/ForgotPasswordWrapper';
-import ResetPasswordWrapper from './components/auth/ResetPasswordWrapper';
-import Dashboard from './components/dashboard/Dashboard';
-import './App.css';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/routing/ProtectedRoute";
+import PublicRoute from "./components/routing/PublicRoute";
+import LoginWrapper from "./components/auth/LoginWrapper";
+import ForgotPasswordWrapper from "./components/auth/ForgotPasswordWrapper";
+import ResetPasswordWrapper from "./components/auth/ResetPasswordWrapper";
+import Dashboard from "./components/dashboard/Dashboard";
 
 function App() {
   return (
