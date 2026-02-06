@@ -36,10 +36,22 @@ function toLocalDateString(date) {
   return `${y}-${m}-${d}`;
 }
 
+// Parse date string as UTC (backend sends UTC). Strings without Z or offset
+// are otherwise interpreted as local time, causing wrong display.
+function parseAsUTC(dateString) {
+  if (!dateString) return null;
+  const s = String(dateString).trim();
+  if (/Z$/.test(s) || /[+-]\d{2}:?\d{2}$/.test(s)) {
+    return new Date(s);
+  }
+  return new Date(s + "Z");
+}
+
 function formatDate(dateString) {
   if (!dateString) return "-";
   try {
-    const date = new Date(dateString);
+    const date = parseAsUTC(dateString);
+    if (!date || isNaN(date.getTime())) return dateString;
     return date.toLocaleString("en-US", {
       timeZone: EST_TIMEZONE,
       dateStyle: "short",
