@@ -193,18 +193,20 @@ export default function Dashboard() {
     ? user.email.substring(0, 2).toUpperCase()
     : "CU";
 
-  const sidebar = (
+  const sidebar = (closeMobileSidebar) => (
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-3 px-2 py-4">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-blue-600 text-white font-semibold">
+          {/* <div className="flex size-10 items-center justify-center rounded-lg bg-blue-600 text-white font-semibold">
             {userInitials}
-          </div>
+          </div> */}
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-zinc-950 truncate">
               {user?.email || "Video Portal"}
             </div>
-            <div className="text-xs text-zinc-500">Customer Video Portal</div>
+            <div className="text-xs text-zinc-500">
+              {sessionStorage.getItem("customer_name") || "Video Portal"}
+            </div>
           </div>
         </div>
       </SidebarHeader>
@@ -219,21 +221,30 @@ export default function Dashboard() {
           </SidebarItem> */}
           <SidebarItem
             current={activeSection === "languages"}
-            onClick={() => setActiveSection("languages")}
+            onClick={() => {
+              setActiveSection("languages");
+              closeMobileSidebar();
+            }}
           >
             <VideoIcon />
             <SidebarLabel>Languages</SidebarLabel>
           </SidebarItem>
           <SidebarItem
             current={activeSection === "history"}
-            onClick={() => setActiveSection("history")}
+            onClick={() => {
+              setActiveSection("history");
+              closeMobileSidebar();
+            }}
           >
             <HistoryIcon />
             <SidebarLabel>Call History</SidebarLabel>
           </SidebarItem>
           <SidebarItem
             current={activeSection === "profile"}
-            onClick={() => setActiveSection("profile")}
+            onClick={() => {
+              setActiveSection("profile");
+              closeMobileSidebar();
+            }}
           >
             <UserIcon />
             <SidebarLabel>Profile</SidebarLabel>
@@ -242,7 +253,10 @@ export default function Dashboard() {
       </SidebarBody>
       <SidebarFooter className="flex flex-col gap-2">
         <Button
-          onClick={openChangePassword}
+          onClick={() => {
+            openChangePassword();
+            closeMobileSidebar();
+          }}
           variant="outline"
           className="w-full flex items-center justify-center gap-2 border-zinc-300 hover:bg-zinc-50 hover:border-zinc-400 active:scale-95 transition-all duration-200 px-4 py-2.5 font-medium"
         >
@@ -250,7 +264,10 @@ export default function Dashboard() {
           <span>Change password</span>
         </Button>
         <Button
-          onClick={handleLogout}
+          onClick={() => {
+            closeMobileSidebar();
+            handleLogout();
+          }}
           variant="outline"
           className="w-full flex items-center justify-center gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 active:scale-95 transition-all duration-200 px-4 py-2.5 font-medium"
         >
@@ -263,7 +280,7 @@ export default function Dashboard() {
 
   const navbar = (
     <Navbar>
-      <Text className="capitalize !text-gray-600 font-light text-sm">
+      <Text className="capitalize !text-gray-600 font-light text-sm px-2">
         Customer Video Portal
       </Text>
     </Navbar>
@@ -271,7 +288,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <StackedLayout navbar={navbar} sidebar={sidebar}>
+      <StackedLayout sidebar={sidebar}>
         {activeSection === "reports" && <Reports />}
         {activeSection === "languages" && <LanguagesList />}
         {activeSection === "history" && <CallsHistory />}
