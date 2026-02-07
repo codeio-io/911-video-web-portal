@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Table } from "antd";
-import { format } from "date-fns";
+import moment from "moment-timezone";
 import { Calendar as CalendarIcon, RefreshCw } from "lucide-react";
 import { Button } from "../ui/button";
 import { Heading } from "../ui/heading";
@@ -13,27 +13,17 @@ import { listCallsHistoryVideo } from "../../api/CustomerApi";
 const MAX_RANGE_DAYS = 31;
 const EST_TIMEZONE = "America/New_York";
 
-// Helper function to get today's date range
+// Helper function to get today's date range (start and end of today in EST)
 function getTodayDateRange() {
-  const today = new Date();
-  const from = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const to = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-    23,
-    59,
-    59,
-    999
-  );
+  const today = moment().tz(EST_TIMEZONE);
+  const from = today.clone().startOf("day").toDate();
+  const to = today.clone().endOf("day").toDate();
   return { from, to };
 }
 
-function toLocalDateString(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+// Convert date range to EST YYYY-MM-DD for API (consistent with display timezone)
+function toESTDateString(date) {
+  return moment(date).tz(EST_TIMEZONE).format("YYYY-MM-DD");
 }
 
 // Parse date string as UTC (backend sends UTC). Strings without Z or offset
@@ -74,17 +64,25 @@ export default function CallsHistory() {
     total: 0,
   });
 
+  const abortRef = useRef(null);
+
   const loadCallHistory = useCallback(
     async (page = 1, pageSize = 10, dateFrom, dateTo) => {
+      // Cancel any in-flight request to prevent race conditions
+      if (abortRef.current) abortRef.current.abort();
+      abortRef.current = new AbortController();
+      const signal = abortRef.current.signal;
+
       try {
         setLoading(true);
         setError(null);
-        const params = { page, pageSize };
+        const params = { page, pageSize, signal };
         if (dateFrom) params.startDate = dateFrom;
         if (dateTo) params.endDate = dateTo;
         const response = await listCallsHistoryVideo(params);
 
-        // Support common API response shapes: { data, total }, { items, meta }, or array
+        if (signal.aborted) return;
+
         const items = response?.data ?? response?.items ?? response;
         const total =
           response?.meta?.total ??
@@ -100,10 +98,16 @@ export default function CallsHistory() {
           total: typeof total === "number" ? total : data.length,
         }));
       } catch (err) {
+        if (
+          err?.name === "CanceledError" ||
+          err?.name === "AbortError" ||
+          err?.code === "ERR_CANCELED"
+        )
+          return;
         setError("Failed to load call history. Please try again.");
         console.error(err);
       } finally {
-        setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     },
     []
@@ -114,20 +118,20 @@ export default function CallsHistory() {
     const from = date.from;
     const to = date.to ?? date.from;
     return {
-      dateFrom: toLocalDateString(from),
-      dateTo: toLocalDateString(to),
+      dateFrom: toESTDateString(from),
+      dateTo: toESTDateString(to),
     };
   }, [date]);
 
   useEffect(() => {
-    const dateFrom = date?.from ? toLocalDateString(date.from) : undefined;
-    const dateTo = date?.to
-      ? toLocalDateString(date.to)
-      : date?.from
-      ? toLocalDateString(date.from)
-      : undefined;
-    loadCallHistory(1, pagination.pageSize, dateFrom, dateTo);
-  }, [date]);
+    const { dateFrom, dateTo } = getDateParams();
+    if (!dateFrom) return;
+    loadCallHistory(1, pagination.pageSize, dateFrom, dateTo ?? dateFrom);
+
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, [date, pagination.pageSize, getDateParams, loadCallHistory]);
 
   const handleTableChange = (newPagination) => {
     const { dateFrom, dateTo } = getDateParams();
@@ -263,9 +267,15 @@ export default function CallsHistory() {
       <div className="flex flex-col items-center justify-center py-12 gap-4">
         <Text className="text-red-600">{error}</Text>
         <button
-          onClick={() =>
-            loadCallHistory(pagination.current, pagination.pageSize)
-          }
+          onClick={() => {
+            const { dateFrom, dateTo } = getDateParams();
+            loadCallHistory(
+              pagination.current,
+              pagination.pageSize,
+              dateFrom,
+              dateTo
+            );
+          }}
           className="px-6 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:scale-95 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
         >
           Retry
@@ -327,11 +337,11 @@ export default function CallsHistory() {
                 {date?.from ? (
                   date.to ? (
                     <>
-                      {format(date.from, "LLL dd, y")} -{" "}
-                      {format(date.to, "LLL dd, y")}
+                      {moment(date.from).tz(EST_TIMEZONE).format("MMM dd, y")} -{" "}
+                      {moment(date.to).tz(EST_TIMEZONE).format("MMM dd, y")}
                     </>
                   ) : (
-                    format(date.from, "LLL dd, y")
+                    moment(date.from).tz(EST_TIMEZONE).format("MMM dd, y")
                   )
                 ) : (
                   <span>Pick a date</span>
@@ -389,8 +399,8 @@ export default function CallsHistory() {
         <Table
           columns={columns}
           dataSource={calls}
-          rowKey={(record) =>
-            record.engagement_id ?? record.id ?? record.key ?? Math.random()
+          rowKey={(record, index) =>
+            record.engagement_id ?? record.id ?? record.key ?? `row-${index}`
           }
           loading={loading}
           pagination={{

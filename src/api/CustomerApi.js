@@ -69,7 +69,7 @@ export const getCallHistory = async () => {
 
 export const listCallsHistoryVideo = async (params = {}) => {
   try {
-    const { startDate, endDate, ...rest } = params;
+    const { startDate, endDate, signal, ...rest } = params;
     const query = {
       page: params.page ?? 1,
       page_size: params.pageSize ?? 10,
@@ -77,11 +77,12 @@ export const listCallsHistoryVideo = async (params = {}) => {
     };
     if (startDate) query.start_date = startDate;
     if (endDate) query.end_date = endDate;
-    const response = await apiClient.get("/list-calls-history-video", {
-      params: query,
-    });
+    const config = { params: query };
+    if (signal) config.signal = signal;
+    const response = await apiClient.get("/list-calls-history-video", config);
     return response.data;
   } catch (error) {
+    if (axios.isCancel(error)) throw error;
     console.error("Failed to fetch calls history:", error);
     throw error;
   }
