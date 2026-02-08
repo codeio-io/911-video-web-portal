@@ -337,11 +337,11 @@ export default function CallsHistory() {
                 {date?.from ? (
                   date.to ? (
                     <>
-                      {moment(date.from).tz(EST_TIMEZONE).format("MMM dd, y")} -{" "}
-                      {moment(date.to).tz(EST_TIMEZONE).format("MMM dd, y")}
+                      {moment(date.from).tz(EST_TIMEZONE).format("MMM D, y")} -{" "}
+                      {moment(date.to).tz(EST_TIMEZONE).format("MMM D, y")}
                     </>
                   ) : (
-                    moment(date.from).tz(EST_TIMEZONE).format("MMM dd, y")
+                    moment(date.from).tz(EST_TIMEZONE).format("MMM D, y")
                   )
                 ) : (
                   <span>Pick a date</span>
