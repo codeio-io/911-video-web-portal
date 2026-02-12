@@ -32,14 +32,12 @@ const ForgotPasswordWrapper = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [userEmail, setUserEmail] = useState("");
+  const [username, setUsername] = useState("");
   const navigate = useNavigate();
 
   // Validation schema
   const validationSchema = Yup.object({
-    email: Yup.string()
-      .email("Invalid email address")
-      .required("Email is required"),
+    username: Yup.string().required("Username is required"),
   });
 
   const handleSubmit = async (values, { setSubmitting }) => {
@@ -47,9 +45,9 @@ const ForgotPasswordWrapper = () => {
       setIsLoading(true);
       setError("");
 
-      await requestForgotPasswordOtp(values.email);
+      await requestForgotPasswordOtp(values.username);
 
-      setUserEmail(values.email);
+      setUsername(values.username);
       setIsSubmitted(true);
     } catch (err) {
       setError(
@@ -73,7 +71,9 @@ const ForgotPasswordWrapper = () => {
           </Text>
           <Button
             onClick={() =>
-              navigate(`/reset-password?email=${encodeURIComponent(userEmail)}`)
+              navigate(
+                `/reset-password?username=${encodeURIComponent(username)}`
+              )
             }
             className="w-full"
           >
@@ -97,8 +97,7 @@ const ForgotPasswordWrapper = () => {
       <div className="flex flex-col space-y-6">
         <Heading>Forgot Password</Heading>
         <Text>
-          Enter your email address and we'll send you a code to reset your
-          password.
+          Enter your username and we'll send you a code to reset your password.
         </Text>
 
         {error && (
@@ -106,17 +105,17 @@ const ForgotPasswordWrapper = () => {
         )}
 
         <Formik
-          initialValues={{ email: "" }}
+          initialValues={{ username: "" }}
           validationSchema={validationSchema}
           onSubmit={handleSubmit}
         >
           {({ isSubmitting }) => (
             <Form className="space-y-6">
               <FormField
-                name="email"
-                label="Email Address"
-                type="email"
-                autoComplete="email"
+                name="username"
+                label="Username"
+                type="text"
+                autoComplete="username"
                 required
               />
 
@@ -128,12 +127,12 @@ const ForgotPasswordWrapper = () => {
                 {isLoading ? "Sending..." : "Send Reset Code"}
               </Button>
 
-          <div className="text-center">
-            <Text>
-              Remember your password?{" "}
-              <TextLink to="/login">Sign In</TextLink>
-            </Text>
-          </div>
+              <div className="text-center">
+                <Text>
+                  Remember your password?{" "}
+                  <TextLink to="/login">Sign In</TextLink>
+                </Text>
+              </div>
             </Form>
           )}
         </Formik>

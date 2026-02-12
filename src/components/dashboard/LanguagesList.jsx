@@ -10,6 +10,7 @@ import {
   getTopLanguages,
 } from "../../api/CustomerApi";
 import { useZoomVideo } from "../../hooks/useZoomVideo";
+import { echo } from "../../lib/echo";
 
 /** Trim _Video and _Audio suffix from language name before handling. */
 function trimLanguageSuffix(name) {
@@ -156,12 +157,18 @@ export default function LanguagesList() {
   };
 
   useEffect(() => {
-    let intervalId;
-    loadLanguages().then(() => {
-      intervalId = setInterval(refreshAvailability, 60_000);
+    loadLanguages();
+  }, []);
+
+  useEffect(() => {
+    const channel = echo.channel("video-status");
+    channel.listen(".contact_center.user_status_changed", () => {
+      console.log("User status changed");
+      refreshAvailability();
     });
+
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      echo.leave("video-status");
     };
   }, []);
 
@@ -186,7 +193,8 @@ export default function LanguagesList() {
         const availabilityByLanguage = {};
         for (const item of availList) {
           const raw = typeof item === "object" && item !== null ? item : {};
-          const rawLang = typeof item === "string" ? item : item?.language ?? "";
+          const rawLang =
+            typeof item === "string" ? item : item?.language ?? "";
           const baseName = trimLanguageSuffix(rawLang);
           if (!baseName) continue;
           if (!availabilityByLanguage[baseName]) {
@@ -212,7 +220,7 @@ export default function LanguagesList() {
         // Merge top languages with availability
         const merged = topLangNames.map((name) => ({
           language: name,
-          ...(availabilityByLanguage[name] ?? {
+          ...(availabilityByLanguage[trimLanguageSuffix(name)] ?? {
             opted_in_count_video: 0,
             opted_in_count_audio: 0,
           }),
@@ -292,7 +300,7 @@ export default function LanguagesList() {
 
       const merged = allLanguageNames.map((name) => ({
         language: name,
-        ...(availabilityByLanguage[name] ?? {
+        ...(availabilityByLanguage[trimLanguageSuffix(name)] ?? {
           opted_in_count_video: 0,
           opted_in_count_audio: 0,
         }),
@@ -399,7 +407,7 @@ export default function LanguagesList() {
           <Heading level={2} className="text-sm font-semibold text-zinc-800">
             Top languages
           </Heading>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2">
             {topLanguages.map((lang) => {
               const { videoDisabled, audioDisabled } = getAvailability(
                 lang,

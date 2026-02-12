@@ -26,11 +26,14 @@ export const setup_mfa = async (session) => {
 };
 
 /** Request OTP for forgot password. Sends code to the given email. */
-export const requestForgotPasswordOtp = async (email) => {
+export const requestForgotPasswordOtp = async (username) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/forgot-password`, {
-      email,
-    });
+    const response = await axios.post(
+      `${API_BASE_URL}/customer-video-forgot-password`,
+      {
+        username,
+      }
+    );
     return response.data;
   } catch (error) {
     throw error;
@@ -38,15 +41,20 @@ export const requestForgotPasswordOtp = async (email) => {
 };
 
 /** Confirm forgot password with OTP and new password. */
-export const confirmForgotPassword = async (email, code, newPassword) => {
+export const confirmForgotPassword = async (
+  username,
+  otp,
+  newPassword,
+  confirmPassword
+) => {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/confirm-forgot-password`,
+      `${API_BASE_URL}/customer-video-reset-password`,
       {
-        email,
-        code,
-        newPassword,
-        confirmPassword: newPassword,
+        username,
+        otp,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
       }
     );
     return response.data;

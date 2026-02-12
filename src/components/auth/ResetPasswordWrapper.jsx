@@ -35,23 +35,24 @@ const ResetPasswordWrapper = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const email = searchParams.get("email") || "";
+  const username = searchParams.get("username") || "";
 
   useEffect(() => {
-    if (!email) {
+    if (!username) {
       navigate("/forgot-password", { replace: true });
     }
-  }, [email, navigate]);
+  }, [username, navigate]);
 
-  if (!email) {
+  if (!username) {
     return null;
   }
 
   // Validation schema
   const validationSchema = Yup.object({
-    code: Yup.string()
-      .required("Verification code is required")
-      .matches(/^\d{6}$/, "Code must be 6 digits"),
+    otp: Yup.string()
+      .required("OTP is required")
+      .min(6, "OTP must be 6 digits")
+      .max(6, "OTP must be 6 digits"),
     newPassword: Yup.string()
       .min(8, "Password must be at least 8 characters")
       .required("New password is required"),
@@ -66,13 +67,15 @@ const ResetPasswordWrapper = () => {
       setError("");
 
       await confirmForgotPassword(
-        email,
-        values.code,
-        values.newPassword
+        username,
+        values.otp,
+        values.newPassword,
+        values.confirmPassword
       );
 
       setIsSuccess(true);
     } catch (err) {
+      console.error("Failed to reset password:", err);
       setError(
         err.response?.data?.message ||
           "Failed to reset password. Please try again."
@@ -117,10 +120,7 @@ const ResetPasswordWrapper = () => {
     <AuthLayout>
       <div className="flex flex-col space-y-6">
         <Heading>Reset Password</Heading>
-        <Text>
-          Enter the verification code sent to your email and create a new
-          password.
-        </Text>
+        <Text>Enter the OTP sent to your email and create a new password.</Text>
 
         {error && (
           <div className="text-red-500 text-sm text-center">{error}</div>
@@ -128,7 +128,7 @@ const ResetPasswordWrapper = () => {
 
         <Formik
           initialValues={{
-            code: "",
+            otp: "",
             newPassword: "",
             confirmPassword: "",
           }}
@@ -138,10 +138,10 @@ const ResetPasswordWrapper = () => {
           {({ isSubmitting }) => (
             <Form className="space-y-6">
               <FormField
-                name="code"
-                label="Verification Code"
+                name="otp"
+                label="OTP"
                 type="text"
-                placeholder="Enter 6-digit code"
+                placeholder="Enter 6-digit OTP"
                 maxLength={6}
                 required
               />

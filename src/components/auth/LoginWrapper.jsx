@@ -10,6 +10,7 @@ import { initiate_login, setup_mfa } from "../../api/AuthApi";
 import { Formik, Form, useField } from "formik";
 import * as Yup from "yup";
 import { useAuth } from "../../context/AuthContext";
+import logo from "../../assets/logo.png";
 // Custom form field component that works with Formik
 const FormField = ({ label, ...props }) => {
   const [field, meta] = useField(props);
@@ -35,7 +36,7 @@ const LoginWrapper = () => {
 
   // Validation schema using Yup
   const validationSchema = Yup.object({
-    email: Yup.string().required("Email or username is required"),
+    username: Yup.string().required("Username is required"),
     password: Yup.string()
       .min(6, "Password must be at least 6 characters")
       .required("Password is required"),
@@ -44,7 +45,7 @@ const LoginWrapper = () => {
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       setLoginError("");
-      let response = await initiate_login(values.email, values.password);
+      let response = await initiate_login(values.username, values.password);
 
       // if (response.ChallengeName === "SOFTWARE_TOKEN_MFA") {
       //   navigate("/otp?email=" + values.email + "&session=" + response.Session);
@@ -70,20 +71,21 @@ const LoginWrapper = () => {
   return (
     <AuthLayout>
       <div className="grid w-full max-w-sm grid-cols-1 gap-8">
+        <img src={logo} width={300} alt="911 Interpreters Logo" />
         <Heading>Sign in to Customer Video Portal</Heading>
 
         <Formik
-          initialValues={{ email: "", password: "" }}
+          initialValues={{ username: "", password: "" }}
           validationSchema={validationSchema}
           onSubmit={handleSubmit}
         >
           {({ isSubmitting }) => (
             <Form className="grid grid-cols-1 gap-6">
               <FormField
-                label="Email or Username"
+                label="Username"
                 type="text"
-                name="email"
-                placeholder="you@example.com"
+                name="username"
+                placeholder="john.doe"
               />
 
               <FormField
@@ -97,14 +99,14 @@ const LoginWrapper = () => {
                 <div className="text-red-600 text-sm">{loginError}</div>
               )}
 
-              {/* <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
                 <Link
                   to="/forgot-password"
                   className="text-sm text-blue-600 hover:underline"
                 >
                   Forgot password?
                 </Link>
-              </div> */}
+              </div>
 
               <Button
                 type="submit"
