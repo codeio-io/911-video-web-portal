@@ -163,9 +163,7 @@ export default function CallsHistory() {
       try {
         setSummaryLoading(true);
         const languageParams =
-          Array.isArray(languages) && languages.length > 0
-          ? { languages }
-            : {};
+          Array.isArray(languages) && languages.length > 0 ? { languages } : {};
         const response = await getCallsSummary({
           startDate: dateFrom,
           endDate: dateTo,

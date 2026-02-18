@@ -172,6 +172,36 @@ export const userUpdateCustomerVideoAccount = async (data) => {
   }
 };
 
+export const changeProfilePictureVideo = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append("profile_picture", file);
+    const response = await apiClient.post(
+      "/change-profile-picture-video",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to change profile picture:", error);
+    throw error;
+  }
+};
+
+export const deleteProfilePictureVideo = async () => {
+  try {
+    const response = await apiClient.post("/delete-profile-picture-video");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to delete profile picture:", error);
+    throw error;
+  }
+};
+
 export const storeVideoFlowData = async (data) => {
   try {
     const response = await apiClient.post("/store-video-flow-data", data);
