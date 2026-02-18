@@ -88,6 +88,45 @@ export const listCallsHistoryVideo = async (params = {}) => {
   }
 };
 
+export const downloadCallsHistoryVideoCsv = async (params = {}) => {
+  try {
+    const { startDate, endDate, signal, ...rest } = params;
+    const query = {
+      format: "csv",
+      ...rest,
+    };
+    if (startDate) query.start_date = startDate;
+    if (endDate) query.end_date = endDate;
+    const config = {
+      params: query,
+      responseType: "blob",
+    };
+    if (signal) config.signal = signal;
+    return await apiClient.get("/get-video-calls-to-download-chunked", config);
+  } catch (error) {
+    if (axios.isCancel(error)) throw error;
+    console.error("Failed to download calls history CSV:", error);
+    throw error;
+  }
+};
+
+export const getCallsSummary = async (params = {}) => {
+  try {
+    const { startDate, endDate, signal, ...rest } = params;
+    const query = { ...rest };
+    if (startDate) query.start_date = startDate;
+    if (endDate) query.end_date = endDate;
+    const config = { params: query };
+    if (signal) config.signal = signal;
+    const response = await apiClient.get("/get-calls-summary", config);
+    return response.data;
+  } catch (error) {
+    if (axios.isCancel(error)) throw error;
+    console.error("Failed to fetch calls summary:", error);
+    throw error;
+  }
+};
+
 export const getProfile = async () => {
   try {
     const response = await apiClient.get("/customer/profile");
