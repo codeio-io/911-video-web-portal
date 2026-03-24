@@ -48,17 +48,13 @@ export const getAvailableLanguages = async () => {
 /** Top languages for the dashboard. For now returns mock data; replace with real endpoint when ready. */
 export const getTopLanguages = async () => {
   // TODO: replace with real API call, e.g. apiClient.get("/top-languages")
-  await new Promise((r) => setTimeout(r, 0)); // simulate async
-  return [
-    { language: "Spanish", opted_in_count_video: 12, opted_in_count_audio: 8 },
-    { language: "Mandarin", opted_in_count_video: 10, opted_in_count_audio: 6 },
-    { language: "Arabic", opted_in_count_video: 8, opted_in_count_audio: 5 },
-    { language: "Vietnamese", opted_in_count_video: 7, opted_in_count_audio: 4 },
-    { language: "French", opted_in_count_video: 6, opted_in_count_audio: 7 },
-    { language: "Tagalog", opted_in_count_video: 5, opted_in_count_audio: 3 },
-    { language: "Korean", opted_in_count_video: 4, opted_in_count_audio: 4 },
-    { language: "Russian", opted_in_count_video: 3, opted_in_count_audio: 2 },
-  ];
+  try {
+    const response = await apiClient.get("/get-top-video-languages");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch top video languages:", error);
+    throw error;
+  }
 };
 
 export const getCallHistory = async () => {
@@ -73,7 +69,7 @@ export const getCallHistory = async () => {
 
 export const listCallsHistoryVideo = async (params = {}) => {
   try {
-    const { startDate, endDate, ...rest } = params;
+    const { startDate, endDate, signal, ...rest } = params;
     const query = {
       page: params.page ?? 1,
       page_size: params.pageSize ?? 10,
@@ -81,12 +77,52 @@ export const listCallsHistoryVideo = async (params = {}) => {
     };
     if (startDate) query.start_date = startDate;
     if (endDate) query.end_date = endDate;
-    const response = await apiClient.get("/list-calls-history-video", {
-      params: query,
-    });
+    const config = { params: query };
+    if (signal) config.signal = signal;
+    const response = await apiClient.get("/list-calls-history-video", config);
     return response.data;
   } catch (error) {
+    if (axios.isCancel(error)) throw error;
     console.error("Failed to fetch calls history:", error);
+    throw error;
+  }
+};
+
+export const downloadCallsHistoryVideoCsv = async (params = {}) => {
+  try {
+    const { startDate, endDate, signal, ...rest } = params;
+    const query = {
+      format: "csv",
+      ...rest,
+    };
+    if (startDate) query.start_date = startDate;
+    if (endDate) query.end_date = endDate;
+    const config = {
+      params: query,
+      responseType: "blob",
+    };
+    if (signal) config.signal = signal;
+    return await apiClient.get("/get-video-calls-to-download-chunked", config);
+  } catch (error) {
+    if (axios.isCancel(error)) throw error;
+    console.error("Failed to download calls history CSV:", error);
+    throw error;
+  }
+};
+
+export const getCallsSummary = async (params = {}) => {
+  try {
+    const { startDate, endDate, signal, ...rest } = params;
+    const query = { ...rest };
+    if (startDate) query.start_date = startDate;
+    if (endDate) query.end_date = endDate;
+    const config = { params: query };
+    if (signal) config.signal = signal;
+    const response = await apiClient.get("/get-calls-summary", config);
+    return response.data;
+  } catch (error) {
+    if (axios.isCancel(error)) throw error;
+    console.error("Failed to fetch calls summary:", error);
     throw error;
   }
 };
@@ -132,6 +168,36 @@ export const userUpdateCustomerVideoAccount = async (data) => {
     return response.data;
   } catch (error) {
     console.error("Failed to update customer video account:", error);
+    throw error;
+  }
+};
+
+export const changeProfilePictureVideo = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append("profile_picture", file);
+    const response = await apiClient.post(
+      "/change-profile-picture-video",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to change profile picture:", error);
+    throw error;
+  }
+};
+
+export const deleteProfilePictureVideo = async () => {
+  try {
+    const response = await apiClient.post("/delete-profile-picture-video");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to delete profile picture:", error);
     throw error;
   }
 };
